@@ -24,7 +24,7 @@ def splitter(text: str, start: str, end: str) -> str:
 def parse_card(
     card: str, month_length: int = 2, year_length: int = 4
 ) -> Optional[Tuple[str, str, str, str]] | Optional[str]:
-    parts = re.split(r"\\D+", card.strip())[:4]
+    parts = re.split(r"\D+", card.strip())[:4]   # ← BIEN: un solo backslash
     if len(parts) < 4:
         return "Invalid length (4 parts needed)."
 
