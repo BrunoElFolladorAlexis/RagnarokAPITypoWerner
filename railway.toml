@@ -12,5 +12,5 @@ PORT = "8000"
 HOST = "0.0.0.0"
 
 [environments.production.variables]
-PYTHONPATH = "/app"
+PYTHONPATH = "/main"
 PYTHONUNBUFFERED = "1"
